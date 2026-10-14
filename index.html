@@ -1,0 +1,328 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DULZ SYSTEM - 3D Cyberpunk Root Registration</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Consolas', 'Courier New', monospace;
+        }
+
+        body {
+            background-color: #030308;
+            background-image: 
+                radial-gradient(circle at 50% 50%, rgba(255, 0, 127, 0.15) 0%, rgba(3, 3, 8, 0.95) 70%),
+                linear-gradient(rgba(0, 255, 204, 0.05) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(0, 255, 204, 0.05) 1px, transparent 1px);
+            background-size: 100% 100%, 30px 30px, 30px 30px;
+            color: #00ffcc;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            overflow: hidden;
+            perspective: 1200px;
+        }
+
+        /* Overlay Garis Scanline Holo */
+        .scanlines {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            pointer-events: none;
+            background: linear-gradient(
+                rgba(18, 16, 16, 0) 50%, 
+                rgba(0, 0, 0, 0.4) 50%
+            );
+            background-size: 100% 4px;
+            z-index: 10;
+            opacity: 0.7;
+        }
+
+        /* Panel Utama 3D */
+        .card-container {
+            position: relative;
+            transform-style: preserve-3d;
+            transition: transform 0.1s ease-out;
+            z-index: 2;
+        }
+
+        .card {
+            background: rgba(10, 10, 18, 0.92);
+            border: 3px solid #ff007f;
+            border-radius: 16px;
+            padding: 35px 30px;
+            width: 420px;
+            position: relative;
+            box-shadow: 
+                0 0 20px rgba(255, 0, 127, 0.6),
+                0 0 50px rgba(0, 255, 204, 0.3),
+                inset 0 0 25px rgba(255, 0, 127, 0.2);
+            backdrop-filter: blur(8px);
+            transform-style: preserve-3d;
+            animation: borderPulse 2s infinite alternate;
+        }
+
+        /* Frame Neon Luar Tambahan (Sensasi Layer 3D) */
+        .card::before {
+            content: '';
+            position: absolute;
+            top: -12px;
+            left: -12px;
+            right: -12px;
+            bottom: -12px;
+            border: 2px solid #00ffcc;
+            border-radius: 22px;
+            box-shadow: 0 0 15px #00ffcc, inset 0 0 15px #00ffcc;
+            pointer-events: none;
+            transform: translateZ(-20px);
+            opacity: 0.8;
+        }
+
+        /* Siku Dekorasi Cyberpunk */
+        .corner {
+            position: absolute;
+            width: 16px;
+            height: 16px;
+            border-color: #ffff00;
+            border-style: solid;
+        }
+        .top-left { top: 8px; left: 8px; border-width: 3px 0 0 3px; }
+        .top-right { top: 8px; right: 8px; border-width: 3px 3px 0 0; }
+        .bottom-left { bottom: 8px; left: 8px; border-width: 0 0 3px 3px; }
+        .bottom-right { bottom: 8px; right: 8px; border-width: 0 3px 3px 0; }
+
+        /* Judul Glitch Text */
+        .title {
+            text-align: center;
+            font-size: 26px;
+            font-weight: 900;
+            color: #ffffff;
+            text-shadow: 
+                2px 2px 0px #ff007f, 
+                -2px -2px 0px #00ffcc;
+            margin-bottom: 25px;
+            letter-spacing: 2px;
+            position: relative;
+            transform: translateZ(30px);
+        }
+
+        .title::after {
+            content: "⚡ DULZ SYSTEM ⚡";
+            position: absolute;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            color: #ff007f;
+            overflow: hidden;
+            clip: rect(0, 900px, 0, 0);
+            animation: glitch 2s infinite linear alternate-reverse;
+        }
+
+        /* Form Controls */
+        .form-group {
+            margin-bottom: 20px;
+            transform: translateZ(20px);
+        }
+
+        label {
+            display: block;
+            margin-bottom: 8px;
+            color: #ffff00;
+            font-size: 13px;
+            font-weight: bold;
+            letter-spacing: 1px;
+            text-shadow: 0 0 8px #ffff00;
+        }
+
+        input {
+            width: 100%;
+            padding: 14px;
+            background: rgba(3, 3, 8, 0.85);
+            border: 2px solid #00ffcc;
+            border-radius: 8px;
+            color: #ffffff;
+            font-size: 14px;
+            outline: none;
+            box-shadow: inset 0 0 10px rgba(0, 255, 204, 0.2);
+            transition: all 0.3s ease;
+        }
+
+        input:focus {
+            border-color: #ff007f;
+            box-shadow: 
+                0 0 15px rgba(255, 0, 127, 0.8),
+                inset 0 0 10px rgba(255, 0, 127, 0.4);
+        }
+
+        /* Tombol Ekstrem Gragas */
+        button {
+            width: 100%;
+            padding: 16px;
+            margin-top: 10px;
+            background: linear-gradient(90deg, #ff007f, #b30059);
+            border: 2px solid #ffffff;
+            border-radius: 8px;
+            color: #ffffff;
+            font-size: 15px;
+            font-weight: 900;
+            letter-spacing: 1.5px;
+            cursor: pointer;
+            text-transform: uppercase;
+            box-shadow: 
+                0 0 20px rgba(255, 0, 127, 0.8),
+                0 5px 0 #7a003c;
+            transform: translateZ(25px);
+            transition: all 0.2s ease;
+        }
+
+        button:hover {
+            background: linear-gradient(90deg, #00ffcc, #009977);
+            color: #000;
+            border-color: #00ffcc;
+            box-shadow: 
+                0 0 25px rgba(0, 255, 204, 0.9),
+                0 5px 0 #006650;
+            transform: translateZ(35px) translateY(-2px);
+        }
+
+        button:active {
+            transform: translateZ(15px) translateY(3px);
+            box-shadow: 0 2px 0 #006650;
+        }
+
+        /* Status Pesan System Log */
+        #message {
+            margin-top: 20px;
+            text-align: center;
+            font-size: 13px;
+            font-weight: bold;
+            min-height: 20px;
+            letter-spacing: 1px;
+            transform: translateZ(20px);
+        }
+
+        /* Animasi Keyframes */
+        @keyframes borderPulse {
+            0% {
+                border-color: #ff007f;
+                box-shadow: 0 0 20px rgba(255, 0, 127, 0.6), 0 0 50px rgba(0, 255, 204, 0.3);
+            }
+            100% {
+                border-color: #00ffcc;
+                box-shadow: 0 0 30px rgba(0, 255, 204, 0.8), 0 0 60px rgba(255, 0, 127, 0.4);
+            }
+        }
+
+        @keyframes glitch {
+            0% { clip: rect(10px, 9999px, 30px, 0); transform: skew(0.3deg); }
+            20% { clip: rect(40px, 9999px, 10px, 0); transform: skew(0.8deg); }
+            40% { clip: rect(25px, 9999px, 50px, 0); transform: skew(-0.3deg); }
+            60% { clip: rect(60px, 9999px, 20px, 0); transform: skew(0.5deg); }
+            80% { clip: rect(15px, 9999px, 40px, 0); transform: skew(-0.8deg); }
+            100% { clip: rect(50px, 9999px, 35px, 0); transform: skew(0.2deg); }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="scanlines"></div>
+
+    <div class="card-container" id="cardContainer">
+        <div class="card">
+            <!-- Siku Dekorasi 3D -->
+            <div class="corner top-left"></div>
+            <div class="corner top-right"></div>
+            <div class="corner bottom-left"></div>
+            <div class="corner bottom-right"></div>
+
+            <div class="title">⚡ DULZ SYSTEM ⚡</div>
+
+            <div class="form-group">
+                <label>COMMANDER ID (EMAIL):</label>
+                <input type="email" id="email" placeholder="commander@dulz.com" required autocomplete="off">
+            </div>
+
+            <div class="form-group">
+                <label>SECURITY KEY (PASSWORD):</label>
+                <input type="password" id="password" placeholder="Minimal 6 karakter" required>
+            </div>
+
+            <button id="btnDaftar">INJECT ROOT CREDENTIALS NOW</button>
+
+            <div id="message"></div>
+        </div>
+    </div>
+
+    <!-- Firebase SDK v10 -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+        import { getAuth, createUserWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+
+        // Konfigurasi Firebase databasedulz milik Anda
+        const firebaseConfig = {
+            apiKey: "AIzaSyAu8jfKAHn02WphSErUAuc7t2Z5YtAVZqo",
+            authDomain: "databasedulz.firebaseapp.com",
+            projectId: "databasedulz",
+            storageBucket: "databasedulz.firebasestorage.app",
+            messagingSenderId: "203997043682",
+            appId: "1:203997043682:web:75081be2c1e9f156ebf7bb",
+            measurementId: "G-PJBMXPQYBW"
+        };
+
+        // Inisialisasi Firebase
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+
+        const btnDaftar = document.getElementById("btnDaftar");
+        const messageDiv = document.getElementById("message");
+
+        // Fungsi Registrasi ke Firebase Auth
+        btnDaftar.addEventListener("click", async () => {
+            const email = document.getElementById("email").value.trim();
+            const password = document.getElementById("password").value.trim();
+
+            if (!email || !password) {
+                messageDiv.style.color = "#ff0055";
+                messageDiv.innerText = "[X] SYSTEM ERROR: Credential fields cannot be empty!";
+                return;
+            }
+
+            messageDiv.style.color = "#ffff00";
+            messageDiv.innerText = "[*] INJECTING CREDENTIALS TO ROOT DATABASE...";
+
+            try {
+                await createUserWithEmailAndPassword(auth, email, password);
+                messageDiv.style.color = "#00ffcc";
+                messageDiv.innerText = "[✓] SUCCESS: Root Credentials Injected! Ready for APK Login.";
+                
+                document.getElementById("email").value = "";
+                document.getElementById("password").value = "";
+            } catch (error) {
+                messageDiv.style.color = "#ff0055";
+                messageDiv.innerText = "[X] INJECTION FAILED: " + error.message;
+            }
+        });
+
+        // Effect Tilt 3D Interaktif Mengikuti Gerakan Kursor Mouse
+        const container = document.getElementById('cardContainer');
+        document.addEventListener('mousemove', (e) => {
+            const xAxis = (window.innerWidth / 2 - e.pageX) / 25;
+            const yAxis = (window.innerHeight / 2 - e.pageY) / 25;
+            container.style.transform = `rotateY(${xAxis}deg) rotateX(${yAxis}deg)`;
+        });
+
+        // Reset Posisi 3D Saat Mouse Keluar Layar
+        document.addEventListener('mouseleave', () => {
+            container.style.transform = `rotateY(0deg) rotateX(0deg)`;
+        });
+    </script>
+</body>
+</html>
