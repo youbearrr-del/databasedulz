@@ -216,6 +216,7 @@ details>div{margin-top:12px}
     <nav class="tabs" role="tablist">
       <button class="tab active" data-tab="akun"><i class="fa-solid fa-user-plus"></i> Akun</button>
       <button class="tab" data-tab="kontrol"><i class="fa-solid fa-sliders"></i> Kontrol</button>
+      <button class="tab" data-tab="sesi"><i class="fa-solid fa-tower-broadcast"></i> Sesi</button>
       <button class="tab" data-tab="riwayat"><i class="fa-solid fa-clock-rotate-left"></i> Riwayat</button>
       <button class="tab" data-tab="integrasi"><i class="fa-solid fa-plug"></i> Integrasi APK</button>
     </nav>
@@ -345,6 +346,21 @@ details>div{margin-top:12px}
       </div>
     </section>
 
+    <!-- ===== TAB SESI ===== -->
+    <section id="tab-sesi" class="pane">
+      <div class="panel">
+        <div class="row" style="justify-content:space-between;flex-wrap:wrap">
+          <div><h2>Akun yang login di aplikasi</h2><p class="desc">Online berarti aplikasi aktif dalam 5 menit terakhir. Daftar diperbarui otomatis.</p></div>
+          <select id="sesFil" aria-label="Filter sesi" style="width:auto"><option value="">Semua</option><option value="online">Online saja</option></select>
+        </div>
+        <div class="chips"><span class="chip"><b id="sesOnline">0</b>Online sekarang</span><span class="chip"><b id="sesTotal">0</b>Pernah login</span></div>
+        <div class="toolbar">
+          <div class="field grow"><i class="lead fa-solid fa-magnifying-glass"></i><input type="search" id="sesSearch" class="input" placeholder="Cari email atau nama PC" aria-label="Cari sesi"></div>
+        </div>
+        <div class="users" id="sesList"><p class="empty">Belum ada akun yang login.</p></div>
+      </div>
+    </section>
+
     <!-- ===== TAB RIWAYAT ===== -->
     <section id="tab-riwayat" class="pane">
       <div class="panel">
@@ -375,6 +391,10 @@ details>div{margin-top:12px}
   forceUpdate: boolean
   forceLogoutAt: waktu ISO (string)
   flags: { namaFitur: boolean }
+
+sessions/{uid}   (ditulis oleh APK)
+  email, machine, version, online: boolean
+  loginAt, lastSeen: waktu ISO (string)
 
 users/{uid}
   email, name, createdAt, createdBy
@@ -428,7 +448,7 @@ const auth2 = getAuth(initializeApp(firebaseConfig, "creator"));
 const configDocRef = doc(db, "system", "config");
 
 const $ = id => document.getElementById(id);
-let adminEmail = "panel", unsubs = [], logs = [], users = [], flags = {}, filled = false, lastCred = "";
+let adminEmail = "panel", unsubs = [], logs = [], users = [], sessions = [], flags = {}, filled = false, lastCred = "";
 
 /* ---------- Util ---------- */
 function toast(t){const e=$("toast");e.textContent=t;e.classList.add("on");clearTimeout(toast.t);toast.t=setTimeout(()=>e.classList.remove("on"),2800)}
@@ -468,6 +488,9 @@ function start(){
         if(!filled){filled=true;$("versionInput").value=d.version||"";$("urlInput").value=d.updateUrl||"";$("changelogInput").value=d.changelog||"";$("forceInput").checked=d.forceUpdate===true;$("maintMsg").value=d.maintenanceMessage||"";$("annType").value=d.announcementType||"info"}
     }, ()=>toast("Gagal membaca pengaturan. Periksa aturan Firestore.")));
     unsubs.push(onSnapshot(query(collection(db,"logs"),orderBy("time","desc"),limit(100)), s=>{logs=s.docs.map(d=>d.data());renderHist()}, ()=>{}));
+    unsubs.push(onSnapshot(query(collection(db,"sessions"),orderBy("lastSeen","desc"),limit(300)), s=>{sessions=s.docs.map(d=>d.data());renderSessions()}, ()=>{
+        $("sesList").innerHTML='<p class="empty">Daftar sesi tidak bisa dibaca. Periksa aturan Firestore untuk koleksi "sessions".</p>';
+    }));
     unsubs.push(onSnapshot(query(collection(db,"users"),orderBy("createdAt","desc"),limit(300)), s=>{users=s.docs.map(d=>d.data());renderUsers()}, ()=>{
         $("userList").innerHTML='<p class="empty">Daftar akun tidak bisa dibaca. Periksa aturan Firestore untuk koleksi "users".</p>';
     }));
@@ -663,6 +686,37 @@ $("usersCsv").addEventListener("click",()=>{
     const a=document.createElement("a"); a.href=URL.createObjectURL(new Blob([csv],{type:"text/csv"}));
     a.download="akun-dulz.csv"; a.click(); URL.revokeObjectURL(a.href);
 });
+
+/* ---------- Sesi login aplikasi ---------- */
+const ONLINE_MS = 5*60*1000;
+const sesOnline = s => s.online===true && s.lastSeen && Date.now()-new Date(s.lastSeen) < ONLINE_MS;
+function ago(iso){
+    const t=new Date(iso); if(!iso||isNaN(t)) return "-";
+    const s=Math.max(0,Math.floor((Date.now()-t)/1000));
+    if(s<60) return "baru saja"; if(s<3600) return Math.floor(s/60)+" menit lalu";
+    if(s<86400) return Math.floor(s/3600)+" jam lalu"; return Math.floor(s/86400)+" hari lalu";
+}
+function renderSessions(){
+    const only=$("sesFil").value==="online", q=$("sesSearch").value.trim().toLowerCase(), box=$("sesList");
+    $("sesOnline").textContent=sessions.filter(sesOnline).length; $("sesTotal").textContent=sessions.length;
+    const rows=sessions.filter(s=>(!only||sesOnline(s))&&(!q||(s.email||"").toLowerCase().includes(q)||(s.machine||"").toLowerCase().includes(q)));
+    box.replaceChildren();
+    if(!rows.length){box.innerHTML=`<p class="empty">${sessions.length?"Tidak ada akun yang cocok.":"Belum ada akun yang login."}</p>`;return}
+    rows.forEach(s=>{
+        const on=sesOnline(s);
+        const r=document.createElement("div"); r.className="urow";
+        const av=document.createElement("div"); av.className="avatar"; av.textContent=((s.email||"?")[0]||"?").toUpperCase();
+        const info=document.createElement("div"); info.className="uinfo";
+        const b=document.createElement("b"); b.textContent=s.email||s.uid||"-";
+        const bd=document.createElement("span"); bd.className="badge"+(on?" on":""); bd.textContent=on?"Online":"Offline"; b.append(bd);
+        const sm=document.createElement("small");
+        sm.textContent=[s.machine?"PC: "+s.machine:"", s.version?"Versi "+s.version:"", s.loginAt?"Login "+fmt(s.loginAt):"", "Aktif "+ago(s.lastSeen)].filter(Boolean).join(" · ");
+        info.append(b,sm); r.append(av,info); box.append(r);
+    });
+}
+$("sesFil").addEventListener("change",renderSessions);
+$("sesSearch").addEventListener("input",renderSessions);
+setInterval(renderSessions,30000);
 
 /* ---------- Pesan maintenance ---------- */
 $("maintMsgSave").addEventListener("click", async ()=>{
